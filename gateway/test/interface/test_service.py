@@ -80,6 +80,35 @@ class TestCreateProduct(object):
         assert response.status_code == 400
         assert response.json()['error'] == 'VALIDATION_ERROR'
 
+class TestDeleteProduct(object):
+    def test_can_delete_product(self, gateway_service, web_session):
+        response = web_session.post(
+                    '/products',
+                    json.dumps({
+                        "in_stock": 5,
+                        "maximum_speed": 2,
+                        "id": "the_nicolas",
+                        "passenger_capacity": 202,
+                        "title": "The Nicolas"
+                    })
+                )
+        assert response.status_code == 200
+
+        response = web_session.delete('/products/the_nicolas')
+        assert response.status_code == 200
+        assert gateway_service.products_rpc.delete.call_args_list == [
+            call("the_nicolas")
+        ]
+
+    def test_delete_product_fails_because_product_is_unregistered(
+        self, gateway_service, web_session
+    ):
+        gateway_service.products_rpc.delete.side_effect = (
+            ProductNotFound('missing')
+        )
+        response = web_session.delete('/products/not-valid-id')
+        assert response.status_code == 404
+        assert response.json()['error'] == 'PRODUCT_NOT_FOUND'
 
 class TestGetOrder(object):
 

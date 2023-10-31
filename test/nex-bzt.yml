@@ -64,6 +64,21 @@ scenarios:
         product_key: $.id
         default: NOT_FOUND
 
+    # 2. Delete Product
+    - url: /products/${product_id}
+      label: product-delete
+      think-time: uniform(0s, 0s)
+      method: DELETE
+        
+      assert:
+      - contains:
+        - 200
+        subject: http-code
+        not: false
+      extract-jsonpath:
+        product_key: $.id
+        default: NOT_FOUND
+
     # 3. Create Orders
     - url: /orders
       label: orders-create
