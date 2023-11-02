@@ -81,6 +81,7 @@ class GatewayService(object):
     def delete_product(self, request, product_id):
         """Delete product by `product_id`
         """
+        
         result = self.products_rpc.delete(product_id)
         return Response(result)
 
