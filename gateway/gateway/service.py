@@ -81,9 +81,8 @@ class GatewayService(object):
     def delete_product(self, request, product_id):
         """Delete product by `product_id`
         """
-        
-        result = self.products_rpc.delete(product_id)
-        return Response(result)
+        self.products_rpc.delete(product_id)
+        return Response()
 
     @http("GET", "/orders/<int:order_id>", expected_exceptions=OrderNotFound)
     def get_order(self, request, order_id):

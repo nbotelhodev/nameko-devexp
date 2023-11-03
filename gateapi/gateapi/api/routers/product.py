@@ -33,7 +33,7 @@ def create_product(request: schemas.Product, rpc = Depends(get_rpc)):
 def delete_product(product_id: str, rpc = Depends(get_rpc)):
     try: 
         with rpc.next() as nameko:
-            return nameko.products.delete(product_id)
+            nameko.products.delete(product_id)
     except ProductNotFound as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
