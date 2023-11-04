@@ -1,5 +1,5 @@
 from os import name
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Query
 from fastapi.params import Depends
 from typing import List
 from gateapi.api import schemas
@@ -10,6 +10,13 @@ router = APIRouter(
     prefix = "/orders",
     tags = ['Orders']
 )
+
+@router.get("", status_code=status.HTTP_200_OK)
+def list(page: int = Query(1, ge=1), 
+         page_size: int = Query(25, ge=0), 
+         rpc = Depends(get_rpc)):
+    with rpc.next() as nameko:
+        return nameko.orders.list(page, page_size)
 
 @router.get("/{order_id}", status_code=status.HTTP_200_OK)
 def get_order(order_id: int, rpc = Depends(get_rpc)):
