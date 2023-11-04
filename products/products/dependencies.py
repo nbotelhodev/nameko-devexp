@@ -52,6 +52,11 @@ class StorageWrapper:
         self.client.hmset(
             self._format_key(product['id']),
             product)
+        
+    def delete(self, product_id):
+        result = self.client.delete(self._format_key(product_id))
+        if (result == 0):
+            raise NotFound('Product ID {} does not exist'.format(product_id))
 
     def decrement_stock(self, product_id, amount):
         return self.client.hincrby(
