@@ -1,17 +1,34 @@
 from nameko.events import EventDispatcher
 from nameko.rpc import rpc
 from nameko_sqlalchemy import DatabaseSession
-
+from sqlalchemy import select, func
+from math import ceil
 from orders.exceptions import NotFound
 from orders.models import DeclarativeBase, Order, OrderDetail
 from orders.schemas import OrderSchema
-
 
 class OrdersService:
     name = 'orders'
 
     db = DatabaseSession(DeclarativeBase)
     event_dispatcher = EventDispatcher()
+
+    @rpc
+    def list(self, page, page_size):
+        limit = page_size * page
+        offset = (page - 1) * page_size
+
+        total_items = self.db.scalar(select(func.count()).select_from(Order))
+        items = self.db.scalars(
+            select(Order).limit(limit).offset(offset)).all()
+
+        total_pages = (1 if total_items == 0 else ceil(total_items / page_size))
+
+        return {'page': page,
+                'page_size': page_size,
+                'total_items': total_items,
+                'total_pages': total_pages,
+                'items': OrderSchema().dump(items, many=True).data}
 
     @rpc
     def get_order(self, order_id):

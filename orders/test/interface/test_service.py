@@ -14,7 +14,6 @@ def order(db_session):
     db_session.commit()
     return order
 
-
 @pytest.fixture
 def order_details(db_session, order):
     db_session.add_all([
@@ -32,7 +31,6 @@ def order_details(db_session, order):
 def test_get_order(orders_rpc, order):
     response = orders_rpc.get_order(1)
     assert response['id'] == order.id
-
 
 @pytest.mark.usefixtures('db_session')
 def test_will_raise_when_order_not_found(orders_rpc):
@@ -94,3 +92,69 @@ def test_can_update_order(orders_rpc, order):
 def test_can_delete_order(orders_rpc, order, db_session):
     orders_rpc.delete_order(order.id)
     assert not db_session.query(Order).filter_by(id=order.id).count()
+
+
+@pytest.fixture
+def orders(db_session):
+    for i in range(0, 10):
+        db_session.add(Order(id=i))
+        db_session.commit()
+    return orders
+
+def test_list_order(orders_rpc, orders):
+    page=1
+    page_size=10
+    response = orders_rpc.list(page, page_size)
+    assert response['page'] == 1
+    assert response['page_size'] == 10
+    assert response['total_pages'] == 1
+    assert response['total_items'] == 10
+    assert len(response['items']) == 10
+
+    page=1
+    page_size=5
+    response = orders_rpc.list(page, page_size)
+    assert response['page'] == 1
+    assert response['page_size'] == 5
+    assert response['total_pages'] == 2
+    assert response['total_items'] == 10
+    assert len(response['items']) == 5
+
+    page=2
+    page_size=5
+    response = orders_rpc.list(page, page_size)
+    assert response['page'] == 2
+    assert response['page_size'] == 5
+    assert response['total_pages'] == 2
+    assert response['total_items'] == 10
+    assert len(response['items']) == 5
+
+    page=4
+    page_size=3
+    response = orders_rpc.list(page, page_size)
+    assert response['page'] == 4
+    assert response['page_size'] == 3
+    assert response['total_pages'] == 4
+    assert response['total_items'] == 10
+    assert len(response['items']) == 1
+
+    # no exists page
+    page=1000
+    page_size=3
+    response = orders_rpc.list(page, page_size)
+    assert response['page'] == 1000
+    assert response['page_size'] == 3
+    assert response['total_pages'] == 4
+    assert response['total_items'] == 10
+    assert len(response['items']) == 0
+
+def test_list_order_no_orders(orders_rpc):
+    page=1
+    page_size=10
+    response = orders_rpc.list(page, page_size)
+    print(response)
+    assert response['page'] == 1
+    assert response['page_size'] == 10
+    assert response['total_pages'] == 1
+    assert response['total_items'] == 0
+    assert len(response['items']) == 0

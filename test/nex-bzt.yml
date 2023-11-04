@@ -54,22 +54,6 @@ scenarios:
       label: product-get
       think-time: uniform(0s, 0s)
       method: GET
-        
-      assert:
-      - contains:
-        - 200
-        subject: http-code
-        not: false
-      extract-jsonpath:
-        product_key: $.id
-        default: NOT_FOUND
-
-    # 2. Delete Product
-    - url: /products/${product_id}
-      label: product-delete
-      think-time: uniform(0s, 0s)
-      method: DELETE
-        
       assert:
       - contains:
         - 200
@@ -104,8 +88,20 @@ scenarios:
     - if: '"${order_id}" == "NOT_FOUND"'
       then:
         - action: continue
-  
-    # 4. Get Orders
+
+    # 4. List Orders
+    - url: /orders?page=1&page_size=25
+      label: order-list
+      think-time: uniform(0s, 0s)
+      method: GET
+        
+      assert:
+      - contains:
+        - 200
+        subject: http-code
+        not: false
+
+    # 5. Get Orders
     - url: /orders/${order_id}
       label: order-get
       think-time: uniform(0s, 0s)
@@ -123,6 +119,20 @@ scenarios:
     - if: '"${order_id}" == "NOT_FOUND"'
       then:
         - action: continue
+
+    # 6. Delete Product
+    - url: /products/${product_id}
+      label: product-delete
+      think-time: uniform(0s, 0s)
+      method: DELETE
+      assert:
+      - contains:
+        - 200
+        subject: http-code
+        not: false
+      extract-jsonpath:
+        product_key: $.id
+        default: NOT_FOUND
   
 reporting:
 - module: final-stats
