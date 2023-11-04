@@ -2,7 +2,6 @@ import pytest
 
 from mock import call
 from nameko.exceptions import RemoteError
-from marshmallow.exceptions import ValidationError
 
 from orders.models import Order, OrderDetail
 from orders.schemas import OrderSchema, OrderDetailSchema
