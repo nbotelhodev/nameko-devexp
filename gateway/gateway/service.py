@@ -7,7 +7,7 @@ from nameko.rpc import RpcProxy
 from werkzeug import Response
 
 from gateway.entrypoints import http
-from gateway.exceptions import OrderNotFound, ProductNotFound
+from gateway.exceptions import OrderNotFound, ProductNotFound, ProductIsBeingUsed
 from gateway.schemas import CreateOrderSchema, GetOrderSchema, ProductSchema
 
 
@@ -76,11 +76,16 @@ class GatewayService(object):
     
     @http(
         "DELETE", "/products/<string:product_id>",
-        expected_exceptions=ProductNotFound
+        expected_exceptions=(ProductNotFound, ProductIsBeingUsed)
     )
     def delete_product(self, request, product_id):
         """Delete product by `product_id`
         """
+        
+        order = self.orders_rpc.get_order_by_product_id(product_id)
+        if order is not None:
+            raise ProductIsBeingUsed("Product is being used")
+    
         self.products_rpc.delete(product_id)
         return Response()
 
