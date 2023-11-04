@@ -2,7 +2,7 @@ import json
 
 from mock import call
 
-from gateway.exceptions import OrderNotFound, ProductNotFound
+from gateway.exceptions import OrderNotFound, ProductNotFound, ProductIsBeingUsed
 
 
 class TestGetProduct(object):
@@ -94,6 +94,7 @@ class TestDeleteProduct(object):
                 )
         assert response.status_code == 200
 
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = None
         response = web_session.delete('/products/the_nicolas')
         assert response.status_code == 200
         assert gateway_service.products_rpc.delete.call_args_list == [
@@ -103,12 +104,21 @@ class TestDeleteProduct(object):
     def test_delete_product_fails_because_product_is_unregistered(
         self, gateway_service, web_session
     ):
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = None
         gateway_service.products_rpc.delete.side_effect = (
             ProductNotFound('missing')
         )
         response = web_session.delete('/products/not-valid-id')
         assert response.status_code == 404
         assert response.json()['error'] == 'PRODUCT_NOT_FOUND'
+
+    def test_delete_product_fails_because_product_is_being_using(
+        self, gateway_service, web_session
+    ):
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = object
+        response = web_session.delete('/products/the_nicolas')
+        assert response.status_code == 400
+        assert response.json()['error'] == 'PRODUCT_IS_BEING_USED'
 
 class TestGetOrder(object):
 

@@ -28,3 +28,8 @@ class OrderNotFound(Exception):
 @remote_error('products.exceptions.NotFound')
 class ProductNotFound(Exception):
     pass
+
+@remote_error('products.exceptions.IsBeingUsed')
+class ProductIsBeingUsed(Exception):
+    pass
+

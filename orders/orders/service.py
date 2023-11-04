@@ -83,3 +83,8 @@ class OrdersService:
         order = self.db.query(Order).get(order_id)
         self.db.delete(order)
         self.db.commit()
+
+    @rpc 
+    def get_order_by_product_id(self, _product_id):
+        order = self.db.query(OrderDetail).filter_by(product_id=_product_id).first()
+        return OrderSchema().dump(order).data

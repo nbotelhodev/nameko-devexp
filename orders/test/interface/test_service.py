@@ -94,6 +94,11 @@ def test_can_delete_order(orders_rpc, order, db_session):
     assert not db_session.query(Order).filter_by(id=order.id).count()
 
 
+def test_can_get_order_by_product_id(orders_rpc, order_details):
+    order = orders_rpc.get_order_by_product_id('the_odyssey')
+    assert (order is not None)
+
+
 @pytest.fixture
 def orders(db_session):
     for i in range(0, 10):
