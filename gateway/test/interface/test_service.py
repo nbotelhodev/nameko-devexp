@@ -292,3 +292,45 @@ class TestCreateOrder(object):
         assert response.status_code == 404
         assert response.json()['error'] == 'PRODUCT_NOT_FOUND'
         assert response.json()['message'] == 'Product Id unknown'
+
+class TestListOrders(object):
+    def test_can_list_order(self, gateway_service, web_session):
+        # setup mock orders-service response:
+        gateway_service.orders_rpc.list.return_value = {
+            'page': 1,
+            'page_size': 10,
+            'total_pages': 1,
+            'total_items': 1,
+            'items': [{ 'id': 1,
+                        'order_details': [
+                            {
+                                'id': 1,
+                                'quantity': 2,
+                                'product_id': 'the_odyssey',
+                                'price': '200.00'
+                            }
+                        ]}]
+        }
+
+        # call the gateway service to get order #1
+        response = web_session.get('/orders?page=1&page_size=10')
+        print(response.json())
+        assert response.status_code == 200
+
+        expected_response = {
+            'page': 1,
+            'page_size': 10,
+            'total_pages': 1,
+            'total_items': 1,
+            'items': [
+                {'id': 1,
+                 'order_details': [{
+                     'id': 1,
+                     'quantity': 2,
+                     'product_id': 'the_odyssey',
+                     'price': '200.00'}]
+                 }]}
+        assert expected_response == response.json()
+
+        # check dependencies called as expected
+        assert [call(1, 10)] == gateway_service.orders_rpc.list.call_args_list
