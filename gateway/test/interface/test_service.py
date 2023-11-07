@@ -2,7 +2,7 @@ import json
 
 from mock import call
 
-from gateway.exceptions import OrderNotFound, ProductNotFound
+from gateway.exceptions import OrderNotFound, ProductNotFound, ProductIsBeingUsed
 
 
 class TestGetProduct(object):
@@ -80,6 +80,45 @@ class TestCreateProduct(object):
         assert response.status_code == 400
         assert response.json()['error'] == 'VALIDATION_ERROR'
 
+class TestDeleteProduct(object):
+    def test_can_delete_product(self, gateway_service, web_session):
+        response = web_session.post(
+                    '/products',
+                    json.dumps({
+                        "in_stock": 5,
+                        "maximum_speed": 2,
+                        "id": "the_nicolas",
+                        "passenger_capacity": 202,
+                        "title": "The Nicolas"
+                    })
+                )
+        assert response.status_code == 200
+
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = None
+        response = web_session.delete('/products/the_nicolas')
+        assert response.status_code == 200
+        assert gateway_service.products_rpc.delete.call_args_list == [
+            call("the_nicolas")
+        ]
+
+    def test_delete_product_fails_because_product_is_unregistered(
+        self, gateway_service, web_session
+    ):
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = None
+        gateway_service.products_rpc.delete.side_effect = (
+            ProductNotFound('missing')
+        )
+        response = web_session.delete('/products/not-valid-id')
+        assert response.status_code == 404
+        assert response.json()['error'] == 'PRODUCT_NOT_FOUND'
+
+    def test_delete_product_fails_because_product_is_being_using(
+        self, gateway_service, web_session
+    ):
+        gateway_service.orders_rpc.get_order_by_product_id.return_value = object
+        response = web_session.delete('/products/the_nicolas')
+        assert response.status_code == 400
+        assert response.json()['error'] == 'PRODUCT_IS_BEING_USED'
 
 class TestGetOrder(object):
 
@@ -292,3 +331,45 @@ class TestCreateOrder(object):
         assert response.status_code == 404
         assert response.json()['error'] == 'PRODUCT_NOT_FOUND'
         assert response.json()['message'] == 'Product Id unknown'
+
+class TestListOrders(object):
+    def test_can_list_order(self, gateway_service, web_session):
+        # setup mock orders-service response:
+        gateway_service.orders_rpc.list.return_value = {
+            'page': 1,
+            'page_size': 10,
+            'total_pages': 1,
+            'total_items': 1,
+            'items': [{ 'id': 1,
+                        'order_details': [
+                            {
+                                'id': 1,
+                                'quantity': 2,
+                                'product_id': 'the_odyssey',
+                                'price': '200.00'
+                            }
+                        ]}]
+        }
+
+        # call the gateway service to get order #1
+        response = web_session.get('/orders?page=1&page_size=10')
+        print(response.json())
+        assert response.status_code == 200
+
+        expected_response = {
+            'page': 1,
+            'page_size': 10,
+            'total_pages': 1,
+            'total_items': 1,
+            'items': [
+                {'id': 1,
+                 'order_details': [{
+                     'id': 1,
+                     'quantity': 2,
+                     'product_id': 'the_odyssey',
+                     'price': '200.00'}]
+                 }]}
+        assert expected_response == response.json()
+
+        # check dependencies called as expected
+        assert [call(1, 10)] == gateway_service.orders_rpc.list.call_args_list

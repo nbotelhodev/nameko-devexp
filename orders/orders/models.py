@@ -5,6 +5,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy import Index
 
 
 class Base(object):
@@ -29,6 +30,8 @@ class Order(DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
+order_id_index = Index('order_id_idx', Order.id)
+
 
 class OrderDetail(DeclarativeBase):
     __tablename__ = "order_details"
@@ -43,3 +46,6 @@ class OrderDetail(DeclarativeBase):
     product_id = Column(Integer, nullable=False)
     price = Column(DECIMAL(18, 2), nullable=False)
     quantity = Column(Integer, nullable=False)
+
+order_details_order_id_index = Index('order_details_order_id_idx', OrderDetail.order_id)
+product_id_index = Index('product_id_idx', OrderDetail.product_id)

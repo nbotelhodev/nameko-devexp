@@ -150,3 +150,22 @@ def test_handle_order_created(
     assert b'6' == product_one[b'in_stock']
     assert b'9' == product_two[b'in_stock']
     assert b'12' == product_three[b'in_stock']
+
+def test_delete_product(products, service_container):
+
+    with entrypoint_hook(service_container, 'get') as get:
+        product = get('LZ127')
+    assert product['id'] == 'LZ127'
+
+    with entrypoint_hook(service_container, 'delete') as delete:
+        delete('LZ127')
+
+    with pytest.raises(NotFound):
+        with entrypoint_hook(service_container, 'get') as get:
+            get("LZ127")
+
+def test_delete_product_fails_on_not_found(service_container):
+
+    with pytest.raises(NotFound):
+        with entrypoint_hook(service_container, 'delete') as delete:
+            delete("not_valid_id")

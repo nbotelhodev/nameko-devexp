@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, HTTPException
 from fastapi.params import Depends
 from gateapi.api.dependencies import get_rpc
 from gateapi.api import schemas
-from .exceptions import ProductNotFound
+from .exceptions import ProductNotFound, ProductIsBeingUsed
 
 router = APIRouter(
     prefix = "/products",
@@ -27,3 +27,21 @@ def create_product(request: schemas.Product, rpc = Depends(get_rpc)):
         return {
             "id": request.id
         }
+    
+
+@router.delete("/{product_id}", status_code=status.HTTP_200_OK)
+def delete_product(product_id: str, rpc = Depends(get_rpc)):
+    try: 
+        with rpc.next() as nameko:
+            nameko.products.delete(product_id)
+    except ProductNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error)
+        )
+    except ProductIsBeingUsed as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        )
+    
