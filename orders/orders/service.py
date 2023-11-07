@@ -6,6 +6,7 @@ from math import ceil
 from orders.exceptions import NotFound
 from orders.models import DeclarativeBase, Order, OrderDetail
 from orders.schemas import OrderSchema
+from sqlalchemy.orm import lazyload
 
 class OrdersService:
     name = 'orders'
@@ -18,9 +19,8 @@ class OrdersService:
         limit = page_size * page
         offset = (page - 1) * page_size
 
-        total_items = self.db.scalar(select(func.count()).select_from(Order))
-        items = self.db.scalars(
-            select(Order).limit(limit).offset(offset)).all()
+        total_items = self.db.scalar(select(func.count()).select_from(Order).options(lazyload('*')))
+        items = self.db.query(Order).options(lazyload('*')).limit(limit).offset(offset).all()
 
         total_pages = (1 if total_items == 0 else ceil(total_items / page_size))
 
@@ -86,5 +86,5 @@ class OrdersService:
 
     @rpc 
     def get_order_by_product_id(self, _product_id):
-        order = self.db.query(OrderDetail).filter_by(product_id=_product_id).first()
+        order = self.db.query(OrderDetail).options(lazyload('*')).filter_by(product_id=_product_id).first()
         return OrderSchema().dump(order).data
